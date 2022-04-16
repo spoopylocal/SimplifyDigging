@@ -40,8 +40,8 @@ local function quarry(lr, l, w)
 
 end
 
+-- Parse arguments.
 if args[1] == "room" then
-  -- process the incoming arguments.
   local ud, lr, last
   for i = 2, args.n do
     last = i
@@ -61,23 +61,27 @@ if args[1] == "room" then
   end
 
   -- forward is arg[last]
+  args[last] = tonumber(args[last])
   -- up/down is arg[last + 1]
+  args[last + 1] = tonumber(args[last + 1])
   -- left/right is arg[last + 2]
-  if type(arg[last]) == "number" and type(arg[last + 1]) == "number" and type(arg[last + 2]) == "number" then
+  args[last + 2] = tonumber(args[last + 2])
+
+  if args[last]) and args[last + 1]) and args[last + 2]) then
     -- Here we can allow numbers which are negative to dictate direction as well.
     -- most useful for up/down
     -- "dig room 5 -10 4" would dig a 5 length, 4 width, 10 block down room.
-    if arg[last + 1] < 0 then
+    if args[last + 1] < 0 then
       ud = not ud
     end
-    if arg[last + 2] < 0 then
+    if args[last + 2] < 0 then
       lr = not lr
     end
 
     -- dig the room.
-    return room(arg[last], arg[last + 1], arg[last + 2], ud, lr)
+    return room(args[last], args[last + 1], args[last + 2], ud, lr)
   end
-  error("Expected three numbers for forward distance, up/down distance, and left/right distance.")
+  error("Expected three numbers for forward distance, up/down distance, and left/right distance.", 0)
 elseif args[1] == "tunnel" then
 
 elseif args[1] == "quarry" then
