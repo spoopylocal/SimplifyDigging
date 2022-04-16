@@ -59,7 +59,7 @@ local parsers = {
   {"^%-%-(.+)$", function(matched, arguments)
     arguments.flags[matched:lower()] = true
   end},
-  {"^%-(.+)$"], function(matched, arguments)
+  {"^%-(.+)$", function(matched, arguments)
     for char in matched:lower():gmatch(".") do
       arguments.flags[char] = true
     end
