@@ -74,7 +74,7 @@ parsers.n = #parsers
 -- Parser function which runs all the parsers on each argument.
 local function parse(...)
   local args = table.pack(...)
-  local arguments = {args = {}, flags = {}}
+  local arguments = {args = {n = 0}, flags = {}}
   for i = 1, args.n do
     for j = 1, parsers.n do
       local m = args[i]:match(parsers[j][1]) -- try parsing the string
