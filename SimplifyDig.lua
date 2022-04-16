@@ -12,9 +12,6 @@
   block is "behind" where it is meant to dig.
 ]]
 
-local args = table.pack(...)
-for i = 1, args.n do args[i] = args[i]:lower() end
-
 --- Dig a room.
 -- @tparam number forward The distsance forward to dig.
 -- @tparam number udDistance The distance up/down to dig.
@@ -40,7 +37,59 @@ local function quarry(lr, l, w)
 
 end
 
+-- extremely basic parser, will parse the following:
+-- program arg -f --flag -qwe arg2
+-- into the following:
+--[[
+  {
+    args = {"arg", "arg2"},
+    flags = {
+      ["f"] = true,
+      ["flag"] = true,
+      ["q"] = true,
+      ["w"] = true,
+      ["e"] = true
+    }
+  }
+
+]]
+
+-- these are actual parsers, each one takes the input from the parsed string, and the argument table.
+local parsers = {
+  {"^%-%-(.+)$", function(matched, arguments)
+    arguments.flags[matched:lower()] = true
+  end},
+  {"^%-(.+)$"], function(matched, arguments)
+    for char in matched:lower():gmatch(".") do
+      arguments.flags[char] = true
+    end
+  end},
+  {".+", function(matched, arguments)
+    arguments.args.n = arguments.args.n + 1
+    arguments.args[arguments.args.n] = matched:lower()
+  end},
+}
+parsers.n = #parsers
+
+-- Parser function which runs all the parsers on each argument.
+local function parse(...)
+  local args = table.pack(...)
+  local arguments = {args = {}, flags = {}}
+  for i = 1, args.n do
+    for j = 1, parsers.n do
+      local m = args[i]:match(parsers[j][1]) -- try parsing the string
+      if m then -- if successful
+        parsers[j][2](m, arguments) -- run the parser.
+        break -- then go to the next argument.
+      end
+    end
+  end
+
+  return arguments
+end
+
 -- Parse arguments.
+local args = parse(...)
 if args[1] == "room" then
 
 elseif args[1] == "tunnel" then
