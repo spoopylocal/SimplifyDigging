@@ -41,7 +41,8 @@
         in an attempt to keep it running from where it left off.
     --save="filename"
       * Denotes the save location of the resume file. By default, will save to
-        ".dig_data.dat"
+        ".dig_data.dat". This will also enable resuming. Use just this flag to
+        resume an active dig if the turtle stalled.
     --file="filename"
       * Attempt to resume from where we left off by using the data in the given
         file.
