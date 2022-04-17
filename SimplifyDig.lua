@@ -3,13 +3,48 @@
 --[[
   Planned arguments:
   dig <room|tunnel|quarry|help>
-  dig room [up/down=down] [left/right=right] <forward distance> <up/down distance> <left/right distance>
+  dig room <forward distance> <up/down distance> <left/right distance>
   dig tunnel <length> [width=1]
-  dig quarry [left/right=right] <forward distance> <left/right distance>
-  dig help [room/tunnel/quarry]
+  dig quarry <forward distance> <left/right distance>
+  dig help [room/tunnel/quarry/flags]
 
   All distances are excluding the current block, the turtle assumes the current
   block is "behind" where it is meant to dig.
+
+  Flags:
+  -l or --left
+    * Dig to the left of the starting point.
+  -r or --right
+    * Dig to the right of the starting point. This is the default, but can be
+      specified anyways.
+  -u or --up
+    * Dig upwards from the starting point. This is the default, but can be
+      specified anyways.
+  -d or --down
+    * Dig downards from the starting point.
+  -n or --nofuel
+    * Ignore fuel requirements. Useful for quarrying as the turtle will eat coal
+      it finds, make sure to use -f in tandem with this!
+  -f or --fuel
+    * Eat coal and other fuels the turtle finds along its way while mining.
+  -c or --craft
+    * Acts as -f, but if a crafting table is installed the turtle will use that
+      to craft coal blocks out of the coal it finds, as it is more fuel
+      efficient to do so.
+  -d or --drop
+    * When the turtle is full, the turtle will return home and drop off items.
+      Otherwise, the turtle will return home and try to wait until it is
+      emptied.
+  --overwrite
+    * Creates a startup folder and copies the startup file into it (if one
+      exists). Registers a program as the first to run which will run this file
+      in an attempt to keep it running from where it left off.
+  --file="filename"
+    * Attempt to resume from where we left off by using the data in the given
+      file.
+  --gps
+    * For use with --file, will use gps to aid in determining where we left off
+      when the turtle rebooted.
 ]]
 
 --- Dig a room.
@@ -38,7 +73,7 @@ local function quarry(lr, l, w)
 end
 
 -- extremely basic parser, will parse the following:
--- program arg -f --flag -qwe arg2
+-- program arg -f --flag -qwe arg2 --thing="thing2"
 -- into the following:
 --[[
   {
@@ -48,7 +83,8 @@ end
       ["flag"] = true,
       ["q"] = true,
       ["w"] = true,
-      ["e"] = true
+      ["e"] = true,
+      thing = "thing2"
     }
   }
 
@@ -56,6 +92,9 @@ end
 
 -- these are actual parsers, each one takes the input from the parsed string, and the argument table.
 local parsers = {
+  {"^%-%-(.-)=\"?\'?(.-)\"?\'?$", function(matched, matched2, arguments)
+    arguments.flags[matched:lower()] = true
+  end},
   {"^%-%-(.+)$", function(matched, arguments)
     arguments.flags[matched:lower()] = true
   end},
@@ -77,8 +116,8 @@ local function parse(...)
   local arguments = {args = {n = 0}, flags = {}}
   for i = 1, args.n do
     for j = 1, parsers.n do
-      local m = args[i]:match(parsers[j][1]) -- try parsing the string
-      if m then -- if successful
+      local m = table.pack(args[i]:match(parsers[j][1])) -- try parsing the string
+      if m.n > 0 then -- if successful
         parsers[j][2](m, arguments) -- run the parser.
         break -- then go to the next argument.
       end
