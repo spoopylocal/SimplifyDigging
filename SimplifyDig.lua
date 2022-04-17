@@ -373,6 +373,56 @@ local ensure = {
   end
 }
 
+-- Face in a specific direction.
+local function face(args, direction)
+  if pos.facing == direction then return end
+
+  if (pos.facing + 1) % 4 == direction then
+    ensure.turnRight()
+  else
+    while pos.facing ~= direction do
+      ensure.turnLeft()
+    end
+  end
+end
+
+-- Move to a location.
+local function moveToTarget(args, x, y, z)
+  -- Start with y movement as that is the least likely to get in the way of anything.
+  while pos.y > y do
+    ensure.down(args)
+  end
+  while pos.y < y do
+    ensure.up(args)
+  end
+
+  -- then move along the x axis as that is left and right.
+  while pos.x > x do
+    face(args, 3)
+    ensure.forward(args)
+  end
+  while pos.x < x do
+    face(args, 1)
+    ensure.forward(args)
+  end
+
+  -- finally slide into those DMs ... er, the z axis.
+  while pos.z > z do
+    face(args, 0)
+    ensure.forward(args)
+  end
+  while pos.z < z do
+    face(args, 2)
+    ensure.forward(args)
+  end
+end
+
+-- Move to home target, facing backwards.
+local function returnHome(args)
+  moveToTarget(args, start.x, start.y, start.z)
+  face(args, (start.facing + 2) % 4)
+end
+
 --- Dig a room.
 -- @tparam {args = {string,...}, flags = {[string] = boolean|string}} The table of arguments.
 local function room(args)
@@ -495,6 +545,8 @@ local function room(args)
     dig1 = true
     digPlane(l, w)
   end
+
+  returnHome(args)
 end
 
 --- Dig a tunnel.
