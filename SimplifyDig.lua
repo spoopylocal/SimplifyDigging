@@ -147,6 +147,7 @@ local function simulate(ok, info)
 
   -- if we are just simulating the movement, simulate its result.
   info.result()
+  return true
 end
 
 -- extremely basic parser, will parse the following:
