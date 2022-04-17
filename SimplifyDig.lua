@@ -265,7 +265,13 @@ local function load(filename)
   }
 end
 
-local function save(filename, args)
+local function save(args)
+  local filename = ".dig_data.dat"
+
+  if args.flags.save then
+    filename = args.flags.save
+  end
+
   local h = io.open(filename, 'w')
 
   -- write the arguments.
@@ -331,34 +337,47 @@ end
 local ensure = {
   forward = function()
     _ensure(turtleSim.forward, turtle.dig, turtle.attack)
+    save(args)
   end,
   back = function()
     _ensure(turtleSim.back, turtle.dig, turtle.attack)
+    save(args)
   end,
   up = function()
     _ensure(turtleSim.up, turtle.dig, turtle.attack)
+    save(args)
   end,
   down = function()
     _ensure(turtleSim.down, turtle.dig, turtle.attack)
+    save(args)
+  end,
+  turnLeft = function()
+    _ensure(turtleSim.turnLeft)
+    save(args)
+  end,
+  turnRight = function()
+    _ensure(turtleSim.turnRight)
+    save(args)
   end
 }
 
 --- Dig a room.
 -- @tparam {args = {string,...}, flags = {[string] = boolean|string}} The table of arguments.
 local function room(args)
+  -- check arguments for correctness
 
 end
 
 --- Dig a tunnel.
 -- @tparam {args = {string,...}, flags = {[string] = boolean|string}} The table of arguments.
 local function tunnel(args)
-
+  -- check arguments for correctness
 end
 
 --- Dig a quarry to bedrock.
 -- @tparam {args = {string,...}, flags = {[string] = boolean|string}} The table of arguments.
 local function quarry(args)
-
+  -- check arguments for correctness
 end
 
 -- Load from file if given.
