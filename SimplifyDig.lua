@@ -53,14 +53,18 @@
     * The arguments used to run the program
     * The amount of steps completed as of the last savepoint
     * The last known position and facing of the turtle (x y z f)
+    * The last known mining position and facing of the turtle (x y z f)
     * The starting position (If GPS is enabled, it will be the global position).
       (x y z f)
+    * State (mining|return_home|return_mine|wait)
 
   Save files look like the following:
     args -flags --flags --flags=flags
     32
     3 8 -14 2
+    3 8 -14 2
     0 0 0 3
+    mining
 ]]
 
 -- CC requires
