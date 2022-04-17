@@ -39,11 +39,10 @@
       * Creates a startup folder and copies the startup file into it (if one
         exists). Registers a program as the first to run which will run this file
         in an attempt to keep it running from where it left off.
-    --save="filename"
+    --save=filename
       * Denotes the save location of the resume file. By default, will save to
-        ".dig_data.dat". This will also enable resuming. Use just this flag to
-        resume an active dig if the turtle stalled.
-    --file="filename"
+        ".dig_data.dat".
+    --file=filename
       * Attempt to resume from where we left off by using the data in the given
         file.
     --gps
@@ -170,18 +169,18 @@ end
 ]]
 -- these are actual parsers, each one takes the input from the parsed string, and the argument table.
 local parsers = {
-  {"^%-%-(.-)=\"?\'?(.-)\"?\'?$", function(matched, matched2, arguments)
+  {"^%-%-(.-)=\"?\'?(.-)\"?\'?$", function(arguments, matched, matched2)
+    arguments.flags[matched:lower()] = matched2
+  end},
+  {"^%-%-(.+)$", function(arguments, matched)
     arguments.flags[matched:lower()] = true
   end},
-  {"^%-%-(.+)$", function(matched, arguments)
-    arguments.flags[matched:lower()] = true
-  end},
-  {"^%-(.+)$", function(matched, arguments)
+  {"^%-(.+)$", function(arguments, matched)
     for char in matched:lower():gmatch(".") do
       arguments.flags[char] = true
     end
   end},
-  {".+", function(matched, arguments)
+  {".+", function(arguments, matched)
     arguments.args.n = arguments.args.n + 1
     arguments.args[arguments.args.n] = matched:lower()
   end},
@@ -195,8 +194,8 @@ local function parse(...)
   for i = 1, args.n do
     for j = 1, parsers.n do
       local m = table.pack(args[i]:match(parsers[j][1])) -- try parsing the string
-      if m.n > 0 then -- if successful
-        parsers[j][2](m, arguments) -- run the parser.
+      if m[1] then -- if successful
+        parsers[j][2](arguments, table.unpack(m, 1, m.n)) -- run the parser.
         break -- then go to the next argument.
       end
     end
@@ -260,7 +259,7 @@ local function load(filename)
   -- return all data
   return {
     args = args,
-    stepsTaken = stepsTaken
+    stepsTaken = stepsTaken,
     posSaved = posSaved,
     startSaved = startSaved
   }
@@ -342,28 +341,24 @@ end
 -- can turns fail? I don't think they can, but for some reason I recall it happening
 -- eh, if someone reports it I'll add it to this.
 local ensure = {
-  forward = function()
+  forward = function(args)
     _ensure(turtleSim.forward, turtle.dig, turtle.attack)
     save(args)
   end,
-  back = function()
-    _ensure(turtleSim.back, turtle.dig, turtle.attack)
+  up = function(args)
+    _ensure(turtleSim.up, turtle.digUp, turtle.attackUp)
     save(args)
   end,
-  up = function()
-    _ensure(turtleSim.up, turtle.dig, turtle.attack)
+  down = function(args)
+    _ensure(turtleSim.down, turtle.digDown, turtle.attackDown)
     save(args)
   end,
-  down = function()
-    _ensure(turtleSim.down, turtle.dig, turtle.attack)
+  turnLeft = function(args)
+    _ensure(turtleSim.turnLeft, turtle.attackUp, turtle.attack, turtle.attackDown)
     save(args)
   end,
-  turnLeft = function()
-    _ensure(turtleSim.turnLeft)
-    save(args)
-  end,
-  turnRight = function()
-    _ensure(turtleSim.turnRight)
+  turnRight = function(args)
+    _ensure(turtleSim.turnRight, turtle.attackUp, turtle.attack, turtle.attackDown)
     save(args)
   end
 }
