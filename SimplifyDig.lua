@@ -60,6 +60,7 @@
 ]]
 
 local steps = 0
+local skips = 0
 local pos = {
   x = 0,
   y = 0,
