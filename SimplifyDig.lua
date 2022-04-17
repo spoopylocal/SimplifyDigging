@@ -63,6 +63,9 @@
     0 0 0 3
 ]]
 
+-- CC requires
+local expect = require "cc.expect" .expect
+
 local steps = 0
 local skips = 0
 local pos = {
@@ -134,6 +137,9 @@ local turtleSim = {
 -- @tparam boolean ok Whether the movement is to be applied.
 -- @tparam table info The information about the movement to be made.
 local function simulate(ok, info)
+  expect(1, ok, "boolean", "nil")
+  expect(2, info, "table")
+
   -- If we want to do the move, attempt to do it
   if ok then
     -- if it succeeds, run the result.
@@ -303,7 +309,9 @@ local function save(args)
   local oneflags, longflags, equalflags = makeflags(args.flags)
 
   -- write short flags
-  h:write(table.format("-%s ", table.concat(oneflags)))
+  if #oneflags > 0 then
+    h:write(string.format("-%s ", table.concat(oneflags)))
+  end
 
   -- write long flags
   for i = 1, #longflags do
@@ -332,7 +340,7 @@ end
 -- Ensure function to ensure a movement was completed.
 local function _ensure(movement, ...)
   local funcs = table.pack(...)
-  while not simulate(skips > 0, movement) do
+  while not simulate(skips <= 0, movement) do
     for i = 1, funcs.n do
       funcs[i]()
     end
@@ -344,23 +352,23 @@ end
 -- eh, if someone reports it I'll add it to this.
 local ensure = {
   forward = function(args)
-    _ensure(function() simulate(skips > 0, turtleSim.forward) end, turtle.dig, turtle.attack)
+    _ensure(turtleSim.forward, turtle.dig, turtle.attack)
     save(args)
   end,
   up = function(args)
-    _ensure(function() simulate(skips > 0, turtleSim.up) end, turtle.digUp, turtle.attackUp)
+    _ensure(turtleSim.up, turtle.digUp, turtle.attackUp)
     save(args)
   end,
   down = function(args)
-    _ensure(function() simulate(skips > 0, turtleSim.down) end, turtle.digDown, turtle.attackDown)
+    _ensure(turtleSim.down, turtle.digDown, turtle.attackDown)
     save(args)
   end,
   turnLeft = function(args)
-    _ensure(function() simulate(skips > 0, turtleSim.turnLeft) end, turtle.attackUp, turtle.attack, turtle.attackDown)
+    _ensure(turtleSim.turnLeft, turtle.attackUp, turtle.attack, turtle.attackDown)
     save(args)
   end,
   turnRight = function(args)
-    _ensure(function() simulate(skips > 0, turtleSim.turnRight) end, turtle.attackUp, turtle.attack, turtle.attackDown)
+    _ensure(turtleSim.turnRight, turtle.attackUp, turtle.attack, turtle.attackDown)
     save(args)
   end
 }
@@ -369,50 +377,58 @@ local ensure = {
 -- @tparam {args = {string,...}, flags = {[string] = boolean|string}} The table of arguments.
 local function room(args)
   -- check arguments for correctness
-  for i = 1, 3 do
+  for i = 2, 4 do
     args.args[i] = tonumber(args.args[i])
     if not args.args[i] then
       error(string.format("Bad argument #%d: Should be a number.", i), 0)
     end
   end
-  local l, h, w = table.unpack(args.args, 1, 3)
+  local l, h, w = table.unpack(args.args, 2, 4)
 
-  local turn = ensure.turnRight
-  local vertical = ensure.up
+  local argWrapper = {}
+  for k, v in pairs(ensure) do
+    argWrapper[k] = function()
+      return v(args)
+    end
+  end
+
+  local turn = argWrapper.turnRight
+  local vertical = argWrapper.up
   local vertDig1, vertDig2 = turtle.digUp, turtle.digDown
   local fuel = not (args.n or args.nofuel)
   -- set up directions
   if args.flags.l or args.flags.left then
-    turn = ensure.turnLeft
+    turn = argWrapper.turnLeft
   elseif args.flags.r or args.flags.right then
-    turn = ensure.turnRight
+    turn = argWrapper.turnRight
   end
   -- toggle direction if negative.
   if w < 0 then
-    turn = turn == ensure.turnLeft and ensure.turnRight or ensure.turnLeft
+    turn = turn == argWrapper.turnLeft and argWrapper.turnRight or argWrapper.turnLeft
   end
   if args.flags.u or args.flags.up then
-    vertical = ensure.up
+    vertical = argWrapper.up
     vertDig1, vertDig2 = turtle.digUp, turtle.digDown
   elseif args.flags.d or args.flags.down then
-    vertical = ensure.down
+    vertical = argWrapper.down
     vertDig1, vertDig2 = turtle.digDown, turtle.digUp
   end
   -- toggle direction if negative.
   if h < 0 then
-    vertical = vertical == ensure.up and ensure.down or ensure.up
+    vertical = vertical == argWrapper.up and argWrapper.down or argWrapper.up
     vertDig1, vertDig2 = vertDig1 == turtle.digUp and turtle.digDown or turtle.digUp,
                          vertDig2 == turtle.digUp and turtle.digDown or turtle.digUp
   end
-  local verticalInverse = vertical == ensure.up and ensure.down or ensure.up
+  local verticalInverse = vertical == argWrapper.up and argWrapper.down or argWrapper.up
 
   -- calculate fuel requirements if needed
   if fuel then
 
   end
 
+  print("Initial forward.")
   -- start the movement/dig logic.
-  ensure.forward() -- move forward so we are inside the dig zone.
+  argWrapper.forward() -- move forward so we are inside the dig zone.
   -- and if we are digging 2 or more, go down/up one block.
   if h > 2 then
     vertical()
@@ -421,9 +437,9 @@ local function room(args)
   local lastY = 1
 
   local function digPlane(_l, _w)
-    for x = 1, w do
+    for x = 1, _w do
       -- dig a line
-      for z = 1, l do
+      for z = 1, _l do
         if dig1 then
           vertDig1()
         end
@@ -431,14 +447,18 @@ local function room(args)
           vertDig2()
         end
 
-        ensure.forward() -- digging forwards is assumed in this function
+        if z ~= _l then
+          argWrapper.forward() -- digging forwards is assumed in this function
+        end
       end
 
       -- turn around and go to the next line
-      if x ~= w then
+      if x ~= _w then
         turn()
-        ensure.forward()
+        argWrapper.forward()
         turn()
+        -- and invert the direction we are turning
+        turn = turn == argWrapper.turnLeft and argWrapper.turnRight or argWrapper.turnLeft
       end
     end
   end
@@ -459,24 +479,17 @@ local function room(args)
         vertical()
       end
       -- then turn around
-      ensure.turnLeft()
-      ensure.turnLeft()
-      -- and invert the direction we are turning
-      turn = turn == ensure.turnLeft and ensure.turnRight or ensure.turnLeft
     end
+    argWrapper.turnLeft()
+    argWrapper.turnLeft()
   end
 
   -- handle final rows
-  if lastY + 1 == h then
+  if lastY + 2 == h then
     vertical()
-    dig1 = true
-    dig2 = false
-    digPlane()
-  elseif lastY + 2 == h then
-    vertical() vertical()
     dig2 = false
     dig1 = true
-    digPlane()
+    digPlane(l, w)
   end
 end
 
@@ -535,11 +548,12 @@ if args.flags.overwrite then
   h:close()
 end
 
-if args[1] == "room" then
+if args.args[1] == "room" then
+  print("Room.")
   room(args)
-elseif args[1] == "tunnel" then
+elseif args.args[1] == "tunnel" then
   tunnel(args)
-elseif args[1] == "quarry" then
+elseif args.args[1] == "quarry" then
   quarry(args)
 end
 
