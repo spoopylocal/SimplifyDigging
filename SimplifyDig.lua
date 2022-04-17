@@ -200,11 +200,9 @@ local function parse(...)
   local args = table.pack(...)
   local arguments = {args = {n = 0}, flags = {}}
   for i = 1, args.n do
-    print(args[i])
     for j = 1, parsers.n do
       local m = table.pack(args[i]:match(parsers[j][1])) -- try parsing the string
       if m[1] then -- if successful
-        print("Parser selected:", parsers[j][1])
         parsers[j][2](arguments, table.unpack(m, 1, m.n)) -- run the parser.
         break -- then go to the next argument.
       end
@@ -380,10 +378,8 @@ local ensure = {
 local function room(args)
   -- check arguments for correctness
   for i = 2, 4 do
-    print("b", args.args[i])
     args.args[i] = tonumber(args.args[i])
     if not args.args[i] then
-      print("a", args.args[i])
       error(string.format("Bad argument #%d: Should be a number.", i), 0)
     end
   end
@@ -435,7 +431,6 @@ local function room(args)
 
   end
 
-  print("Initial forward.")
   -- start the movement/dig logic.
   argWrapper.forward() -- move forward so we are inside the dig zone.
   -- and if we are digging 2 or more, go down/up one block.
@@ -558,7 +553,6 @@ if args.flags.overwrite then
 end
 
 if args.args[1] == "room" then
-  print("Room.")
   room(args)
 elseif args.args[1] == "tunnel" then
   tunnel(args)
