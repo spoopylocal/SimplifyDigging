@@ -203,6 +203,7 @@ end
 -- Parse arguments.
 local args = parse(...)
 
+-- Shell tokenizer.
 local function tokenize(...)
     local line = table.concat({ ... }, " ")
     local tokens = {}
