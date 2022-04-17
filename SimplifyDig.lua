@@ -62,7 +62,7 @@
 -- @tparam number udDistance The distance up/down to dig.
 -- @tparam number lrdistance The distance left/right to dig.
 -- @tparam boolean|nil ud Whether the turtle moves up or down. true = down, false/nil = up (default up)
--- @tparam boolean|nil lr Whether the turtle moves left or right. true = right, false/nil = left (default left)
+-- @tparam boolean|nil lr Whether the turtle moves left or right. true = left, false/nil = right (default right)
 local function room(forward, udDistance, lrDistance, ud, lr)
 
 end
@@ -70,12 +70,14 @@ end
 --- Dig a tunnel.
 -- @tparam number l The length to dig the tunnel.
 -- @tparam number|nil w The width of the tunnel (default 1)
-local function tunnel(l, w)
+-- @tparam boolean|nil ud Whether the turtle moves up or down. true = down, false/nil = up (default up)
+-- @tparam boolean|nil lr Whether the turtle moves left or right. true = left, false/nil = right (default right)
+local function tunnel(l, w, ud, lr)
 
 end
 
 --- Dig a quarry to bedrock.
--- @tparam boolean|nil lr Whether the turtle moves left or right. true = right, false/nil = left (default left)
+-- @tparam boolean|nil lr Whether the turtle moves left or right. true = left, false/nil = right (default right)
 -- @tparam number l The length of the quarry (forwards).
 -- @tparam number w The width of the quarry (left or right).
 local function quarry(lr, l, w)
