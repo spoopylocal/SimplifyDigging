@@ -140,29 +140,20 @@ local function simulate(ok, info)
 end
 
 --- Dig a room.
--- @tparam number forward The distsance forward to dig.
--- @tparam number udDistance The distance up/down to dig.
--- @tparam number lrdistance The distance left/right to dig.
--- @tparam boolean|nil ud Whether the turtle moves up or down. true = down, false/nil = up (default up)
--- @tparam boolean|nil lr Whether the turtle moves left or right. true = left, false/nil = right (default right)
-local function room(forward, udDistance, lrDistance, ud, lr)
+-- @tparam {args = {string,...}, flags = {[string] = boolean|string}} The table of arguments.
+local function room(args)
 
 end
 
 --- Dig a tunnel.
--- @tparam number l The length to dig the tunnel.
--- @tparam number|nil w The width of the tunnel (default 1)
--- @tparam boolean|nil ud Whether the turtle moves up or down. true = down, false/nil = up (default up)
--- @tparam boolean|nil lr Whether the turtle moves left or right. true = left, false/nil = right (default right)
-local function tunnel(l, w, ud, lr)
+-- @tparam {args = {string,...}, flags = {[string] = boolean|string}} The table of arguments.
+local function tunnel(args)
 
 end
 
 --- Dig a quarry to bedrock.
--- @tparam boolean|nil lr Whether the turtle moves left or right. true = left, false/nil = right (default right)
--- @tparam number l The length of the quarry (forwards).
--- @tparam number w The width of the quarry (left or right).
-local function quarry(lr, l, w)
+-- @tparam {args = {string,...}, flags = {[string] = boolean|string}} The table of arguments.
+local function quarry(args)
 
 end
 
@@ -225,9 +216,9 @@ end
 local args = parse(...)
 
 if args[1] == "room" then
-
+  room(args)
 elseif args[1] == "tunnel" then
-
+  tunnel(args)
 elseif args[1] == "quarry" then
-
+  quarry(args)
 end
