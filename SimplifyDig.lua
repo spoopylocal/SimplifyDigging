@@ -183,7 +183,7 @@ local parsers = {
   {"^%-%-(.+)$", function(arguments, matched)
     arguments.flags[matched:lower()] = true
   end},
-  {"^%-(.+)$", function(arguments, matched)
+  {"^%-(%a+)$", function(arguments, matched)
     for char in matched:lower():gmatch(".") do
       arguments.flags[char] = true
     end
@@ -200,9 +200,11 @@ local function parse(...)
   local args = table.pack(...)
   local arguments = {args = {n = 0}, flags = {}}
   for i = 1, args.n do
+    print(args[i])
     for j = 1, parsers.n do
       local m = table.pack(args[i]:match(parsers[j][1])) -- try parsing the string
       if m[1] then -- if successful
+        print("Parser selected:", parsers[j][1])
         parsers[j][2](arguments, table.unpack(m, 1, m.n)) -- run the parser.
         break -- then go to the next argument.
       end
@@ -378,8 +380,10 @@ local ensure = {
 local function room(args)
   -- check arguments for correctness
   for i = 2, 4 do
+    print("b", args.args[i])
     args.args[i] = tonumber(args.args[i])
     if not args.args[i] then
+      print("a", args.args[i])
       error(string.format("Bad argument #%d: Should be a number.", i), 0)
     end
   end
@@ -405,6 +409,7 @@ local function room(args)
   -- toggle direction if negative.
   if w < 0 then
     turn = turn == argWrapper.turnLeft and argWrapper.turnRight or argWrapper.turnLeft
+    w = math.abs(w)
   end
   if args.flags.u or args.flags.up then
     vertical = argWrapper.up
@@ -418,6 +423,10 @@ local function room(args)
     vertical = vertical == argWrapper.up and argWrapper.down or argWrapper.up
     vertDig1, vertDig2 = vertDig1 == turtle.digUp and turtle.digDown or turtle.digUp,
                          vertDig2 == turtle.digUp and turtle.digDown or turtle.digUp
+    h = math.abs(h)
+  end
+  if l <= 0 then
+    error("Length cannot be less than or equal to zero.", 0)
   end
   local verticalInverse = vertical == argWrapper.up and argWrapper.down or argWrapper.up
 
