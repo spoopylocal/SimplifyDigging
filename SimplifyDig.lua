@@ -147,6 +147,8 @@ local function simulate(ok, info)
 
   -- if we are just simulating the movement, simulate its result.
   info.result()
+  -- also decrease the amount of items we are skipping.
+  skips = skips - 1
   return true
 end
 
@@ -342,23 +344,23 @@ end
 -- eh, if someone reports it I'll add it to this.
 local ensure = {
   forward = function(args)
-    _ensure(turtleSim.forward, turtle.dig, turtle.attack)
+    _ensure(function() simulate(skips > 0, turtleSim.forward) end, turtle.dig, turtle.attack)
     save(args)
   end,
   up = function(args)
-    _ensure(turtleSim.up, turtle.digUp, turtle.attackUp)
+    _ensure(function() simulate(skips > 0, turtleSim.up) end, turtle.digUp, turtle.attackUp)
     save(args)
   end,
   down = function(args)
-    _ensure(turtleSim.down, turtle.digDown, turtle.attackDown)
+    _ensure(function() simulate(skips > 0, turtleSim.down) end, turtle.digDown, turtle.attackDown)
     save(args)
   end,
   turnLeft = function(args)
-    _ensure(turtleSim.turnLeft, turtle.attackUp, turtle.attack, turtle.attackDown)
+    _ensure(function() simulate(skips > 0, turtleSim.turnLeft) end, turtle.attackUp, turtle.attack, turtle.attackDown)
     save(args)
   end,
   turnRight = function(args)
-    _ensure(turtleSim.turnRight, turtle.attackUp, turtle.attack, turtle.attackDown)
+    _ensure(function() simulate(skips > 0, turtleSim.turnRight) end, turtle.attackUp, turtle.attack, turtle.attackDown)
     save(args)
   end
 }
@@ -367,7 +369,115 @@ local ensure = {
 -- @tparam {args = {string,...}, flags = {[string] = boolean|string}} The table of arguments.
 local function room(args)
   -- check arguments for correctness
+  for i = 1, 3 do
+    args.args[i] = tonumber(args.args[i])
+    if not args.args[i] then
+      error(string.format("Bad argument #%d: Should be a number.", i), 0)
+    end
+  end
+  local l, h, w = table.unpack(args.args, 1, 3)
 
+  local turn = ensure.turnRight
+  local vertical = ensure.up
+  local vertDig1, vertDig2 = turtle.digUp, turtle.digDown
+  local fuel = not (args.n or args.nofuel)
+  -- set up directions
+  if args.flags.l or args.flags.left then
+    turn = ensure.turnLeft
+  elseif args.flags.r or args.flags.right then
+    turn = ensure.turnRight
+  end
+  -- toggle direction if negative.
+  if w < 0 then
+    turn = turn == ensure.turnLeft and ensure.turnRight or ensure.turnLeft
+  end
+  if args.flags.u or args.flags.up then
+    vertical = ensure.up
+    vertDig1, vertDig2 = turtle.digUp, turtle.digDown
+  elseif args.flags.d or args.flags.down then
+    vertical = ensure.down
+    vertDig1, vertDig2 = turtle.digDown, turtle.digUp
+  end
+  -- toggle direction if negative.
+  if h < 0 then
+    vertical = vertical == ensure.up and ensure.down or ensure.up
+    vertDig1, vertDig2 = vertDig1 == turtle.digUp and turtle.digDown or turtle.digUp,
+                         vertDig2 == turtle.digUp and turtle.digDown or turtle.digUp
+  end
+  local verticalInverse = vertical == ensure.up and ensure.down or ensure.up
+
+  -- calculate fuel requirements if needed
+  if fuel then
+
+  end
+
+  -- start the movement/dig logic.
+  ensure.forward() -- move forward so we are inside the dig zone.
+  -- and if we are digging 2 or more, go down/up one block.
+  if h > 2 then
+    vertical()
+  end
+  local dig1, dig2 = false, h > 2
+  local lastY = 1
+
+  local function digPlane(_l, _w)
+    for x = 1, w do
+      -- dig a line
+      for z = 1, l do
+        if dig1 then
+          vertDig1()
+        end
+        if dig2 then
+          vertDig2()
+        end
+
+        ensure.forward() -- digging forwards is assumed in this function
+      end
+
+      -- turn around and go to the next line
+      if x ~= w then
+        turn()
+        ensure.forward()
+        turn()
+      end
+    end
+  end
+
+  for y = 2, h, 3 do
+    -- store information about where we ended.
+    lastY = y
+
+    -- Determine if we need to dig in the vertical direction
+    dig1 = y + 1 <= h
+
+    -- actually dig the plane
+    digPlane(l, w)
+
+    -- determine if we can move another three blocks upwards
+    if y + 3 <= h then
+      for i = 1, 3 do -- actually do that
+        vertical()
+      end
+      -- then turn around
+      ensure.turnLeft()
+      ensure.turnLeft()
+      -- and invert the direction we are turning
+      turn = turn == ensure.turnLeft and ensure.turnRight or ensure.turnLeft
+    end
+  end
+
+  -- handle final rows
+  if lastY + 1 == h then
+    vertical()
+    dig1 = true
+    dig2 = false
+    digPlane()
+  elseif lastY + 2 == h then
+    vertical() vertical()
+    dig2 = false
+    dig1 = true
+    digPlane()
+  end
 end
 
 --- Dig a tunnel.
