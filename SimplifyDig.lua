@@ -232,6 +232,9 @@ end
     0 0 0 3
 ]]
 local function load(filename)
+  if not fs.exists(filename) then
+    error(string.format("Failed to load file '%s' as it does not exist.", filename), 0)
+  end
   -- read lines
   local lines = {}
   for line in io.lines(filename) do
