@@ -332,6 +332,15 @@ local function quarry(args)
 
 end
 
+-- Load from file if given.
+if args.flags.file then
+  local loaded = load(args.flags.file)
+  args = loaded.args
+  skips = loaded.stepsTaken
+  pos = loaded.posSaved
+  start = loaded.startSaved
+end
+
 if args[1] == "room" then
   room(args)
 elseif args[1] == "tunnel" then
