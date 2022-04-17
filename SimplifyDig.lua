@@ -2,49 +2,59 @@
 
 --[[
   Planned arguments:
-  dig <room|tunnel|quarry|help>
-  dig room <forward distance> <up/down distance> <left/right distance>
-  dig tunnel <length> [width=1]
-  dig quarry <forward distance> <left/right distance>
-  dig help [room/tunnel/quarry/flags]
+    dig <room|tunnel|quarry|help>
+    dig room <forward distance> <up/down distance> <left/right distance>
+    dig tunnel <length> [width=1]
+    dig quarry <forward distance> <left/right distance>
+    dig help [room/tunnel/quarry/flags]
 
   All distances are excluding the current block, the turtle assumes the current
   block is "behind" where it is meant to dig.
 
   Flags:
-  -l or --left
-    * Dig to the left of the starting point.
-  -r or --right
-    * Dig to the right of the starting point. This is the default, but can be
-      specified anyways.
-  -u or --up
-    * Dig upwards from the starting point. This is the default, but can be
-      specified anyways.
-  -d or --down
-    * Dig downards from the starting point.
-  -n or --nofuel
-    * Ignore fuel requirements. Useful for quarrying as the turtle will eat coal
-      it finds, make sure to use -f in tandem with this!
-  -f or --fuel
-    * Eat coal and other fuels the turtle finds along its way while mining.
-  -c or --craft
-    * Acts as -f, but if a crafting table is installed the turtle will use that
-      to craft coal blocks out of the coal it finds, as it is more fuel
-      efficient to do so.
-  -d or --drop
-    * When the turtle is full, the turtle will return home and drop off items.
-      Otherwise, the turtle will return home and try to wait until it is
-      emptied.
-  --overwrite
-    * Creates a startup folder and copies the startup file into it (if one
-      exists). Registers a program as the first to run which will run this file
-      in an attempt to keep it running from where it left off.
-  --file="filename"
-    * Attempt to resume from where we left off by using the data in the given
-      file.
-  --gps
-    * For use with --file, will use gps to aid in determining where we left off
-      when the turtle rebooted.
+    -l or --left
+      * Dig to the left of the starting point.
+    -r or --right
+      * Dig to the right of the starting point. This is the default, but can be
+        specified anyways.
+    -u or --up
+      * Dig upwards from the starting point. This is the default, but can be
+        specified anyways.
+    -d or --down
+      * Dig downards from the starting point.
+    -n or --nofuel
+      * Ignore fuel requirements. Useful for quarrying as the turtle will eat coal
+        it finds, make sure to use -f in tandem with this!
+    -f or --fuel
+      * Eat coal and other fuels the turtle finds along its way while mining.
+    -c or --craft
+      * Acts as -f, but if a crafting table is installed the turtle will use that
+        to craft coal blocks out of the coal it finds, as it is more fuel
+        efficient to do so.
+    -d or --drop
+      * When the turtle is full, the turtle will return home and drop off items.
+        Otherwise, the turtle will return home and try to wait until it is
+        emptied.
+    --overwrite
+      * Creates a startup folder and copies the startup file into it (if one
+        exists). Registers a program as the first to run which will run this file
+        in an attempt to keep it running from where it left off.
+    --file="filename"
+      * Attempt to resume from where we left off by using the data in the given
+        file.
+    --gps
+      * For use with --file, will use gps to aid in determining where we left off
+        when the turtle rebooted.
+
+  Save files will contain the following information:
+    * The arguments used to run the program
+    * The amount of steps completed as of the last savepoint
+    * The last known position and facing of the turtle (x y z f)
+
+  Save files look like the following:
+    args -flags --flags --flags=flags
+    32
+    3 8 -14 2
 ]]
 
 --- Dig a room.
