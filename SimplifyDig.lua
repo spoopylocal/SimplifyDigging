@@ -266,6 +266,26 @@ local function load(filename)
   }
 end
 
+local function makeflags(flags)
+  -- determine the flags
+  local oneflags = {}
+  local longflags = {}
+  local equalflags = {}
+  for k, v in pairs(flags) do
+    if type(v) == "boolean" then
+      if #k == 1 then
+        table.insert(oneflags, k)
+      else
+        table.insert(longflags, string.format("--%s", k))
+      end
+    else
+      table.insert(equalflags, string.format("--%s='%s'", k, v))
+    end
+  end
+
+  return oneflags, longflags, equalflags
+end
+
 local function save(args)
   local filename = ".dig_data.dat"
 
@@ -279,21 +299,7 @@ local function save(args)
   h:write(table.concat(args.args, ' '))
   h:write(' ')
 
-  -- determine the flags
-  local oneflags = {}
-  local longflags = {}
-  local equalflags = {}
-  for k, v in pairs(args.flags) do
-    if type(v) == "boolean" then
-      if #k == 1 then
-        table.insert(oneflags, k)
-      else
-        table.insert(longflags, string.format("--%s", k))
-      end
-    else
-      table.insert(equalflags, string.format("--%s='%s'", k, v))
-    end
-  end
+  local oneflags, longflags, equalflags = makeflags(args.flags)
 
   -- write short flags
   h:write(table.format("-%s ", table.concat(oneflags)))
@@ -390,6 +396,40 @@ if args.flags.file then
   start = loaded.startSaved
 end
 
+-- handle the "overwrite" flag.
+if args.flags.overwrite then
+  if fs.exists("startup") then
+    if fs.isDir("startup") then
+      if fs.exists("startup/!_resume_dig.lua") then
+        -- it is safe to assume no other program creates a startup file with this name
+        fs.delete("startup/!_resume_dig.lua")
+      end
+    else
+      local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+      local tempname = ""
+      for i = 1, 10 do
+        tempname = tempname .. chars[math.random(1, #chars)]
+      end
+      fs.move("startup", tempname)
+      fs.makeDir("startup")
+      fs.move(tempname, "startup/999_startup.lua")
+    end
+  else
+    fs.makeDir("startup")
+  end
+
+  local runningProgram = shell.getRunningProgram()
+  local savefile = args.flags.save and args.flags.save or ".dig_data.dat"
+
+  local h = io.open("startup/!_resume_dig.lua")
+  h:write("shell.run('")
+  h:write(runningProgram)
+
+  h:write(string.format(" --save=\"%s\"')", savefile))
+
+  h:close()
+end
+
 if args[1] == "room" then
   room(args)
 elseif args[1] == "tunnel" then
@@ -397,3 +437,6 @@ elseif args[1] == "tunnel" then
 elseif args[1] == "quarry" then
   quarry(args)
 end
+
+-- clean up the temporary resume file.
+fs.delete("startup/!_resume_dig.lua")
