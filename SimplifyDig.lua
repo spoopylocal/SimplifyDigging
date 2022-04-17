@@ -139,24 +139,6 @@ local function simulate(ok, info)
   info.result()
 end
 
---- Dig a room.
--- @tparam {args = {string,...}, flags = {[string] = boolean|string}} The table of arguments.
-local function room(args)
-
-end
-
---- Dig a tunnel.
--- @tparam {args = {string,...}, flags = {[string] = boolean|string}} The table of arguments.
-local function tunnel(args)
-
-end
-
---- Dig a quarry to bedrock.
--- @tparam {args = {string,...}, flags = {[string] = boolean|string}} The table of arguments.
-local function quarry(args)
-
-end
-
 -- extremely basic parser, will parse the following:
 -- program arg -f --flag -qwe arg2 --thing="thing2"
 -- into the following:
@@ -174,7 +156,6 @@ end
   }
 
 ]]
-
 -- these are actual parsers, each one takes the input from the parsed string, and the argument table.
 local parsers = {
   {"^%-%-(.-)=\"?\'?(.-)\"?\'?$", function(matched, matched2, arguments)
@@ -214,6 +195,44 @@ end
 
 -- Parse arguments.
 local args = parse(...)
+
+--[[
+  Save files look like the following:
+    args -flags --flags --flags=flags
+    32
+    3 8 -14 2
+    0 0 0
+]]
+local function load(filename)
+
+end
+
+local function save(filename, args)
+  local h = io.open(filename, 'w')
+  h:write(table.concat(args.args, ' '))
+  h:write(' ')
+  local flags = {}
+  for k, v in pairs(flags) do
+
+end
+
+--- Dig a room.
+-- @tparam {args = {string,...}, flags = {[string] = boolean|string}} The table of arguments.
+local function room(args)
+
+end
+
+--- Dig a tunnel.
+-- @tparam {args = {string,...}, flags = {[string] = boolean|string}} The table of arguments.
+local function tunnel(args)
+
+end
+
+--- Dig a quarry to bedrock.
+-- @tparam {args = {string,...}, flags = {[string] = boolean|string}} The table of arguments.
+local function quarry(args)
+
+end
 
 if args[1] == "room" then
   room(args)
