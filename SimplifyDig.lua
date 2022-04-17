@@ -57,6 +57,59 @@
     3 8 -14 2
 ]]
 
+local pos = {
+  x = 0,
+  y = 0,
+  z = 0,
+  facing = 0
+}
+
+local function makeInfo(func, result)
+  return {
+    f = func,
+    result = result
+  }
+end
+
+local turtleSim = {
+  turnLeft = makeInfo(turtle.turnLeft, function() pos.facing = (pos.facing - 1) % 4 end),
+  turnRight = makeInfo(turtle.turnRight, function() pos.facing = (pos.facing + 1) % 4 end),
+  forward = makeInfo(turtle.forward, function()
+    if pos.facing == 0 then -- facing -Z
+      pos.z = pos.z - 1
+    elseif pos.facing == 1 then -- facing +X
+      pos.x = pos.x + 1
+    elseif pos.facing == 2 then -- facing +Z
+      pos.z = pos.z + 1
+    else -- facing -X
+      pos.x = pos.x - 1
+    end
+  end),
+  back = makeInfo(turtle.back, function()
+    if pos.facing == 0 then -- facing -Z
+      pos.z = pos.z + 1
+    elseif pos.facing == 1 then -- facing +X
+      pos.x = pos.x - 1
+    elseif pos.facing == 2 then -- facing +Z
+      pos.z = pos.z - 1
+    else -- facing -X
+      pos.x = pos.x + 1
+    end
+  end),
+  up = makeInfo(turtle.up, function() pos.y = pos.y + 1 end),
+  down = makeInfo(turtle.down, function() pos.y = pos.y - 1 end)
+}
+
+--- Simulate a certain  movement, or actually do the movement.
+-- @tparam boolean ok Whether the movement is to be applied.
+-- @tparam table info The information about the movement to be made.
+local function simulate(ok, info)
+  if ok then
+    info.f()
+  end
+  info.result()
+end
+
 --- Dig a room.
 -- @tparam number forward The distsance forward to dig.
 -- @tparam number udDistance The distance up/down to dig.
@@ -141,6 +194,8 @@ end
 
 -- Parse arguments.
 local args = parse(...)
+
+require"cc.pretty".print(require"cc.pretty".pretty(args))
 if args[1] == "room" then
 
 elseif args[1] == "tunnel" then
