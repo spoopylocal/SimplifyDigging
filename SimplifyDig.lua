@@ -315,6 +315,34 @@ local function save(filename, args)
   h:close()
 end
 
+-- Ensure function to ensure a movement was completed.
+local function _ensure(movement, ...)
+  local funcs = table.pack(...)
+  while not simulate(skips > 0, movement) do
+    for i = 1, funcs.n do
+      funcs[i]()
+    end
+    os.sleep()
+  end
+end
+
+-- can turns fail? I don't think they can, but for some reason I recall it happening
+-- eh, if someone reports it I'll add it to this.
+local ensure = {
+  forward = function()
+    _ensure(turtleSim.forward, turtle.dig, turtle.attack)
+  end,
+  back = function()
+    _ensure(turtleSim.back, turtle.dig, turtle.attack)
+  end,
+  up = function()
+    _ensure(turtleSim.up, turtle.dig, turtle.attack)
+  end,
+  down = function()
+    _ensure(turtleSim.down, turtle.dig, turtle.attack)
+  end
+}
+
 --- Dig a room.
 -- @tparam {args = {string,...}, flags = {[string] = boolean|string}} The table of arguments.
 local function room(args)
