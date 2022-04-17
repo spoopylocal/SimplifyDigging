@@ -50,11 +50,13 @@
     * The arguments used to run the program
     * The amount of steps completed as of the last savepoint
     * The last known position and facing of the turtle (x y z f)
+    * The starting position (If GPS is enabled, it will be the global position).
 
   Save files look like the following:
     args -flags --flags --flags=flags
     32
     3 8 -14 2
+    0 0 0
 ]]
 
 local steps = 0
@@ -72,6 +74,8 @@ local function makeInfo(func, result)
   }
 end
 
+-- digging is NOT a part of the simulator. Gravel and sand will cause the step
+-- counter to be off when multiple pieces of gravel fall in front of the turtle.
 local turtleSim = {
   turnLeft = makeInfo(turtle.turnLeft, function()
     pos.facing = (pos.facing - 1) % 4
@@ -119,9 +123,18 @@ local turtleSim = {
 -- @tparam boolean ok Whether the movement is to be applied.
 -- @tparam table info The information about the movement to be made.
 local function simulate(ok, info)
+  -- If we want to do the move, attempt to do it
   if ok then
-    info.f()
+    -- if it succeeds, run the result.
+    if info.f() then
+      info.result()
+      return true
+    end
+    -- otherwise note to the caller that we failed
+    return false
   end
+
+  -- if we are just simulating the movement, simulate its result.
   info.result()
 end
 
