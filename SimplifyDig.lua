@@ -223,7 +223,6 @@ end
 -- Parse arguments.
 local args = parse(...)
 
-require"cc.pretty".print(require"cc.pretty".pretty(args))
 if args[1] == "room" then
 
 elseif args[1] == "tunnel" then
