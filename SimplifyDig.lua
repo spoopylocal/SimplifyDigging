@@ -57,6 +57,7 @@
     3 8 -14 2
 ]]
 
+local steps = 0
 local pos = {
   x = 0,
   y = 0,
@@ -72,8 +73,14 @@ local function makeInfo(func, result)
 end
 
 local turtleSim = {
-  turnLeft = makeInfo(turtle.turnLeft, function() pos.facing = (pos.facing - 1) % 4 end),
-  turnRight = makeInfo(turtle.turnRight, function() pos.facing = (pos.facing + 1) % 4 end),
+  turnLeft = makeInfo(turtle.turnLeft, function()
+    pos.facing = (pos.facing - 1) % 4
+    steps = steps + 1
+  end),
+  turnRight = makeInfo(turtle.turnRight, function()
+    pos.facing = (pos.facing + 1) % 4
+    steps = steps + 1
+  end),
   forward = makeInfo(turtle.forward, function()
     if pos.facing == 0 then -- facing -Z
       pos.z = pos.z - 1
@@ -84,6 +91,7 @@ local turtleSim = {
     else -- facing -X
       pos.x = pos.x - 1
     end
+    steps = steps + 1
   end),
   back = makeInfo(turtle.back, function()
     if pos.facing == 0 then -- facing -Z
@@ -95,9 +103,16 @@ local turtleSim = {
     else -- facing -X
       pos.x = pos.x + 1
     end
+    steps = steps + 1
   end),
-  up = makeInfo(turtle.up, function() pos.y = pos.y + 1 end),
-  down = makeInfo(turtle.down, function() pos.y = pos.y - 1 end)
+  up = makeInfo(turtle.up, function()
+    pos.y = pos.y + 1
+    steps = steps + 1
+  end),
+  down = makeInfo(turtle.down, function()
+    pos.y = pos.y - 1
+    steps = steps + 1
+  end)
 }
 
 --- Simulate a certain  movement, or actually do the movement.
