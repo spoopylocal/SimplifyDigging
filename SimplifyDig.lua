@@ -39,6 +39,9 @@
       * Creates a startup folder and copies the startup file into it (if one
         exists). Registers a program as the first to run which will run this file
         in an attempt to keep it running from where it left off.
+    --save="filename"
+      * Denotes the save location of the resume file. By default, will save to
+        ".dig_data.dat"
     --file="filename"
       * Attempt to resume from where we left off by using the data in the given
         file.
