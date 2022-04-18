@@ -78,12 +78,19 @@ local pos = {
   z = 0,
   facing = 0
 }
+local last = {
+  x = 0,
+  y = 0,
+  z = 0,
+  facing = 0
+}
 local start = {
   x = 0,
   y = 0,
   z = 0,
   facing = 0
 }
+local args
 
 local function makeInfo(func, result)
   return {
@@ -215,9 +222,6 @@ local function parse(...)
 
   return arguments
 end
-
--- Parse arguments.
-local args = parse(...)
 
 -- Shell tokenizer.
 local function tokenize(...)
@@ -355,30 +359,30 @@ end
 -- can turns fail? I don't think they can, but for some reason I recall it happening
 -- eh, if someone reports it I'll add it to this.
 local ensure = {
-  forward = function(args)
+  forward = function()
     _ensure(turtleSim.forward, turtle.dig, turtle.attack)
-    save(args)
+    save()
   end,
-  up = function(args)
+  up = function()
     _ensure(turtleSim.up, turtle.digUp, turtle.attackUp)
-    save(args)
+    save()
   end,
-  down = function(args)
+  down = function()
     _ensure(turtleSim.down, turtle.digDown, turtle.attackDown)
-    save(args)
+    save()
   end,
-  turnLeft = function(args)
+  turnLeft = function()
     _ensure(turtleSim.turnLeft, turtle.attackUp, turtle.attack, turtle.attackDown)
-    save(args)
+    save()
   end,
-  turnRight = function(args)
+  turnRight = function()
     _ensure(turtleSim.turnRight, turtle.attackUp, turtle.attack, turtle.attackDown)
-    save(args)
+    save()
   end
 }
 
 -- Face in a specific direction.
-local function face(args, direction)
+local function face(direction)
   if pos.facing == direction then return end
 
   if (pos.facing + 1) % 4 == direction then
@@ -391,45 +395,45 @@ local function face(args, direction)
 end
 
 -- Move to a location.
-local function moveToTarget(args, x, y, z)
+local function moveToTarget(x, y, z)
   -- Start with y movement as that is the least likely to get in the way of anything.
   while pos.y > y do
-    ensure.down(args)
+    ensure.down()
   end
   while pos.y < y do
-    ensure.up(args)
+    ensure.up()
   end
 
   -- then move along the x axis as that is left and right.
   while pos.x > x do
-    face(args, 3)
-    ensure.forward(args)
+    face(3)
+    ensure.forward()
   end
   while pos.x < x do
-    face(args, 1)
-    ensure.forward(args)
+    face(1)
+    ensure.forward()
   end
 
   -- finally slide into those DMs ... er, the z axis.
   while pos.z > z do
-    face(args, 0)
-    ensure.forward(args)
+    face(0)
+    ensure.forward()
   end
   while pos.z < z do
-    face(args, 2)
-    ensure.forward(args)
+    face(2)
+    ensure.forward()
   end
 end
 
 -- Move to home target, facing backwards.
-local function returnHome(args)
-  moveToTarget(args, start.x, start.y, start.z)
-  face(args, (start.facing + 2) % 4)
+local function returnHome()
+  moveToTarget(start.x, start.y, start.z)
+  face((start.facing + 2) % 4)
 end
 
 --- Dig a room.
 -- @tparam {args = {string,...}, flags = {[string] = boolean|string}} The table of arguments.
-local function room(args)
+local function room()
   -- check arguments for correctness
   for i = 2, 4 do
     args.args[i] = tonumber(args.args[i])
@@ -439,38 +443,32 @@ local function room(args)
   end
   local l, h, w = table.unpack(args.args, 2, 4)
 
-  local argWrapper = {}
-  for k, v in pairs(ensure) do
-    argWrapper[k] = function()
-      return v(args)
-    end
-  end
 
-  local turn = argWrapper.turnRight
-  local vertical = argWrapper.up
+  local turn = ensure.turnRight
+  local vertical = ensure.up
   local vertDig1, vertDig2 = turtle.digUp, turtle.digDown
   local fuel = not (args.n or args.nofuel)
   -- set up directions
   if args.flags.l or args.flags.left then
-    turn = argWrapper.turnLeft
+    turn = ensure.turnLeft
   elseif args.flags.r or args.flags.right then
-    turn = argWrapper.turnRight
+    turn = ensure.turnRight
   end
   -- toggle direction if negative.
   if w < 0 then
-    turn = turn == argWrapper.turnLeft and argWrapper.turnRight or argWrapper.turnLeft
+    turn = turn == ensure.turnLeft and ensure.turnRight or ensure.turnLeft
     w = math.abs(w)
   end
   if args.flags.u or args.flags.up then
-    vertical = argWrapper.up
+    vertical = ensure.up
     vertDig1, vertDig2 = turtle.digUp, turtle.digDown
   elseif args.flags.d or args.flags.down then
-    vertical = argWrapper.down
+    vertical = ensure.down
     vertDig1, vertDig2 = turtle.digDown, turtle.digUp
   end
   -- toggle direction if negative.
   if h < 0 then
-    vertical = vertical == argWrapper.up and argWrapper.down or argWrapper.up
+    vertical = vertical == ensure.up and ensure.down or ensure.up
     vertDig1, vertDig2 = vertDig1 == turtle.digUp and turtle.digDown or turtle.digUp,
                          vertDig2 == turtle.digUp and turtle.digDown or turtle.digUp
     h = math.abs(h)
@@ -478,7 +476,7 @@ local function room(args)
   if l <= 0 then
     error("Length cannot be less than or equal to zero.", 0)
   end
-  local verticalInverse = vertical == argWrapper.up and argWrapper.down or argWrapper.up
+  local verticalInverse = vertical == ensure.up and ensure.down or ensure.up
 
   -- calculate fuel requirements if needed
   if fuel then
@@ -486,7 +484,7 @@ local function room(args)
   end
 
   -- start the movement/dig logic.
-  argWrapper.forward() -- move forward so we are inside the dig zone.
+  ensure.forward() -- move forward so we are inside the dig zone.
   -- and if we are digging 2 or more, go down/up one block.
   if h > 2 then
     vertical()
@@ -506,17 +504,17 @@ local function room(args)
         end
 
         if z ~= _l then
-          argWrapper.forward() -- digging forwards is assumed in this function
+          ensure.forward() -- digging forwards is assumed in this function
         end
       end
 
       -- turn around and go to the next line
       if x ~= _w then
         turn()
-        argWrapper.forward()
+        ensure.forward()
         turn()
         -- and invert the direction we are turning
-        turn = turn == argWrapper.turnLeft and argWrapper.turnRight or argWrapper.turnLeft
+        turn = turn == ensure.turnLeft and ensure.turnRight or ensure.turnLeft
       end
     end
   end
@@ -538,8 +536,8 @@ local function room(args)
       end
       -- then turn around
     end
-    argWrapper.turnLeft()
-    argWrapper.turnLeft()
+    ensure.turnLeft()
+    ensure.turnLeft()
   end
 
   -- handle final rows
@@ -555,15 +553,18 @@ end
 
 --- Dig a tunnel.
 -- @tparam {args = {string,...}, flags = {[string] = boolean|string}} The table of arguments.
-local function tunnel(args)
+local function tunnel()
   -- check arguments for correctness
 end
 
 --- Dig a quarry to bedrock.
 -- @tparam {args = {string,...}, flags = {[string] = boolean|string}} The table of arguments.
-local function quarry(args)
+local function quarry()
   -- check arguments for correctness
 end
+
+-- Parse arguments.
+args = parse(...)
 
 -- Load from file if given.
 if args.flags.file then
@@ -609,11 +610,11 @@ if args.flags.overwrite then
 end
 
 if args.args[1] == "room" then
-  room(args)
+  room()
 elseif args.args[1] == "tunnel" then
-  tunnel(args)
+  tunnel()
 elseif args.args[1] == "quarry" then
-  quarry(args)
+  quarry()
 end
 
 -- clean up the temporary resume file.
