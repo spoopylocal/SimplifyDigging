@@ -381,8 +381,144 @@ local ensure = {
   end
 }
 
+-- Broadcast an issue across rednet whenever one arises.
+local function broadcast(issue)
+  local message = string.format("Cannot continue mining: %s", issue)
+  if type(args.flags.broadcast) == "boolean" then
+    rednet.broadcast(message)
+  elseif type(args.flags.broadcast) == "string" then
+    rednet.broadcast(message, args.flags.broadcast)
+  end
+end
+
+--- Check how full the inventory is.
+-- Can use the slot argument if we want to check for less than 16.
+local function checkInv(slot)
+  slot = slot or 16
+  return turtle.getItemCount(slot) > 0
+end
+
+local function checkWholeInv()
+  for i = 1, 16 do
+    if turtle.getItemCount(i) > 0 then
+      return true
+    end
+  end
+
+  return falses
+end
+
+local validStorageTags = {
+  "minecraft:shulker_boxes",
+  "forge:chests"
+}
+validStorageTags.n = #validStorageTags
+local validStorageFind = {
+  "chest",
+  "shulker_box"
+}
+validStorageFind.n = #validStorageFind
+local coal = "minecraft:coal"
+
+local function isItem(detail, name, dmg)
+  if detail.damage or detail.metadata then -- 1.12.2 check
+    if dmg == (item.damage or item.metadata) then -- prefer damage, but if that doesn't exist check metadata.
+      if name == detail.name then
+        return true
+      end
+    end
+
+    return false
+  end
+
+  -- 1.13+ check
+  return name == detail.name
+end
+
+-- dmg for compatability with 1.12.2
+local function countItems(itemName, dmg)
+  dmg = dmg or 0
+  local count = 0
+
+  for i = 1, 16 do
+    local item = turtle.getItemDetail(i)
+    if isItem(item, coal) then
+      count = count + item.count
+    end
+  end
+
+  return count
+end
+
+-- Drop all items
+local function dropAll()
+  for i = 1, 16 do
+    turtle.select(i)
+    turtle.drop()
+  end
+
+  -- if there are items still in the turtle...
+  if checkWholeInv() then
+    -- wait a little bit then try again.
+    broadcast("Tried to drop items, but items remain in inventory.")
+    os.sleep(10)
+    return dropAll()
+  end
+
+  turtle.select(1)
+end
+
+-- drop only non-fuel items, refuelling with those items instead.
+local function dropNonFuels()
+  for i = 1, 16 do
+    turtle.select(i)
+    turtle.refuel()
+    turtle.drop()
+  end
+
+  -- if there are items still in the turtle...
+  if checkWholeInv() then
+    -- wait a little bit then try again.
+    broadcast("Tried to drop items, but items remain in inventory.")
+    os.sleep(10)
+    return dropAll()
+  end
+
+  turtle.select(1)
+end
+
+-- Handle logic of dropping items.
 local function dropItems()
   state = "wait"
+  local isBlock, block = turtle.inspect()
+
+  if (args.flags.i or args.flags.items) and isBlock then
+    if block.tags then
+      for i = 1, validStorageTags do
+        if block.tags[validStorageTags[i]] then
+          return (args.flags.f or args.flags.fuel) and dropNonFuels() or dropAll()
+        end
+      end
+    else
+      for i = 1, validStorageFind do
+        if block.name:find(validStorageFind[i]) do
+          return (args.flags.f or args.flags.fuel) and dropNonFuels() or dropAll()
+        end
+      end
+    end
+  else
+    -- if we can't drop blocks, just wait.
+    local tmr = os.startTimer(10)
+    repeat
+      local ev, e1 = os.pullEvent()
+      if ev == "timer" and e1 == tmr then
+        tmr = os.startTimer(10)
+        broadcast("Inventory full, dropping disabled.")
+      end
+    until not checkWholeInv()
+
+    turtle.select(1)
+  end
 end
 
 -- Face in a specific direction.
@@ -440,13 +576,6 @@ local function returnToWork()
   state = "return_mine"
   moveToTarget(last.x, last.y, last.z)
   face(last.facing)
-end
-
---- Check how full the inventory is.
--- Can use the slot argument if we want to check for less than 16.
-local function checkInv(slot)
-  slot = slot or 16
-  return turtle.getItemCount(slot) > 0
 end
 
 --- Dig a room.
