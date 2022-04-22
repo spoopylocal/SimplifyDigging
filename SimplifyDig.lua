@@ -795,6 +795,10 @@ end
 
 turtle.select(1) -- before anything is run, select first slot.
 -- makes it easier for checking inventory fullness.
+if args.flags.broadcast then
+  pcall(rednet.open, "left")
+  pcall(rednet.open, "right")
+end
 if args.args[1] == "room" then
   room()
 elseif args.args[1] == "tunnel" then
