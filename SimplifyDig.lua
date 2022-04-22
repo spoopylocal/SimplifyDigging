@@ -90,6 +90,7 @@ local start = {
   z = 0,
   facing = 0
 }
+local state = "startup"
 local args
 
 local function makeInfo(func, result)
@@ -301,7 +302,7 @@ local function makeflags(flags)
   return oneflags, longflags, equalflags
 end
 
-local function save(args)
+local function save()
   local filename = ".dig_data.dat"
 
   if args.flags.save then
@@ -381,6 +382,10 @@ local ensure = {
   end
 }
 
+local function dropItems()
+  state = "wait"
+end
+
 -- Face in a specific direction.
 local function face(direction)
   if pos.facing == direction then return end
@@ -427,8 +432,22 @@ end
 
 -- Move to home target, facing backwards.
 local function returnHome()
+  state = "return_home"
   moveToTarget(start.x, start.y, start.z)
   face((start.facing + 2) % 4)
+end
+
+local function returnToWork()
+  state = "return_mine"
+  moveToTarget(last.x, last.y, last.z)
+  face(last.facing)
+end
+
+--- Check how full the inventory is.
+-- Can use the slot argument if we want to check for less than 16.
+local function checkInv(slot)
+  slot = slot or 16
+  return turtle.getItemCount(slot) > 0
 end
 
 --- Dig a room.
@@ -443,9 +462,45 @@ local function room()
   end
   local l, h, w = table.unpack(args.args, 2, 4)
 
+  local function doCheck()
+    if checkInv() then
+      returnHome()
+      dropItems()
+      returnToWork()
+    end
+    state = "mining"
+  end
 
-  local turn = ensure.turnRight
-  local vertical = ensure.up
+  local wrapper = {
+    digUp = function()
+      turtle.digUp()
+      doCheck()
+    end,
+    digDown = function()
+      turtle.digDown()
+      doCheck()
+    end,
+    dig = function()
+      turtle.dig()
+      doCheck()
+    end,
+    forward = function()
+      ensure.forward()
+      doCheck()
+    end,
+    up = function()
+      ensure.up()
+      doCheck()
+    end,
+    down = function()
+      ensure.down()
+      doCheck()
+    end,
+  }
+
+
+  local turn = wrapper.turnRight
+  local vertical = wrapper.up
   local vertDig1, vertDig2 = turtle.digUp, turtle.digDown
   local fuel = not (args.n or args.nofuel)
   -- set up directions
@@ -460,15 +515,15 @@ local function room()
     w = math.abs(w)
   end
   if args.flags.u or args.flags.up then
-    vertical = ensure.up
+    vertical = wrapper.up
     vertDig1, vertDig2 = turtle.digUp, turtle.digDown
   elseif args.flags.d or args.flags.down then
-    vertical = ensure.down
+    vertical = wrapper.down
     vertDig1, vertDig2 = turtle.digDown, turtle.digUp
   end
   -- toggle direction if negative.
   if h < 0 then
-    vertical = vertical == ensure.up and ensure.down or ensure.up
+    vertical = vertical == wrapper.up and wrapper.down or wrapper.up
     vertDig1, vertDig2 = vertDig1 == turtle.digUp and turtle.digDown or turtle.digUp,
                          vertDig2 == turtle.digUp and turtle.digDown or turtle.digUp
     h = math.abs(h)
@@ -476,15 +531,16 @@ local function room()
   if l <= 0 then
     error("Length cannot be less than or equal to zero.", 0)
   end
-  local verticalInverse = vertical == ensure.up and ensure.down or ensure.up
+  local verticalInverse = vertical == wrapper.up and wrapper.down or wrapper.up
 
   -- calculate fuel requirements if needed
   if fuel then
 
   end
 
+  state = "mining"
   -- start the movement/dig logic.
-  ensure.forward() -- move forward so we are inside the dig zone.
+  wrapper.forward() -- move forward so we are inside the dig zone.
   -- and if we are digging 2 or more, go down/up one block.
   if h > 2 then
     vertical()
@@ -504,14 +560,14 @@ local function room()
         end
 
         if z ~= _l then
-          ensure.forward() -- digging forwards is assumed in this function
+          wrapper.forward() -- digging forwards is assumed in this function
         end
       end
 
       -- turn around and go to the next line
       if x ~= _w then
         turn()
-        ensure.forward()
+        wrapper.forward()
         turn()
         -- and invert the direction we are turning
         turn = turn == ensure.turnLeft and ensure.turnRight or ensure.turnLeft
@@ -609,6 +665,8 @@ if args.flags.overwrite then
   h:close()
 end
 
+turtle.select(1) -- before anything is run, select first slot.
+-- makes it easier for checking inventory fullness.
 if args.args[1] == "room" then
   room()
 elseif args.args[1] == "tunnel" then
