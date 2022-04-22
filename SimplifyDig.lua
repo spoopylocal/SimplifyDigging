@@ -27,11 +27,7 @@
         it finds, make sure to use -f in tandem with this!
     -f or --fuel
       * Eat coal and other fuels the turtle finds along its way while mining.
-    -c or --craft
-      * Acts as -f, but if a crafting table is installed the turtle will use that
-        to craft coal blocks out of the coal it finds, as it is more fuel
-        efficient to do so.
-    -d or --drop
+    -i or --items
       * When the turtle is full, the turtle will return home and drop off items.
         Otherwise, the turtle will return home and try to wait until it is
         emptied.
