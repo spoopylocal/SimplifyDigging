@@ -23,8 +23,8 @@
     -d or --down
       * Dig downards from the starting point.
     -n or --nofuel
-      * Ignore fuel requirements. Useful for quarrying as the turtle will eat coal
-        it finds, make sure to use -f in tandem with this!
+      * Ignore fuel requirements. Useful for quarrying as the turtle will eat
+        coal it finds, make sure to use -f in tandem with this!
     -f or --fuel
       * Eat coal and other fuels the turtle finds along its way while mining.
     -i or --items
@@ -33,8 +33,8 @@
         emptied.
     --overwrite
       * Creates a startup folder and copies the startup file into it (if one
-        exists). Registers a program as the first to run which will run this file
-        in an attempt to keep it running from where it left off.
+        exists). Registers a program as the first to run which will run this
+        file in an attempt to keep it running from where it left off.
     --save=filename
       * Denotes the save location of the resume file. By default, will save to
         ".dig_data.dat".
@@ -42,8 +42,11 @@
       * Attempt to resume from where we left off by using the data in the given
         file.
     --gps
-      * For use with --file, will use gps to aid in determining where we left off
-        when the turtle rebooted.
+      * For use with --file, will use gps to aid in determining where we left
+        off when the turtle rebooted.
+    --broadcast=protocol
+      * If the turtle runs into an issue, broadcast over rednet (with the
+        specified protocol) the turtle's location (or estimated location).
 
   Save files will contain the following information:
     * The arguments used to run the program
