@@ -3,9 +3,9 @@
 --[[
   Planned arguments:
     dig <room|tunnel|quarry|help>
-    dig room <forward distance> <up/down distance> <left/right distance>
-    dig tunnel <length> [width=1]
-    dig quarry <forward distance> <left/right distance>
+    dig room <forward distance> <up/down distance> <left/right distance> [flags]
+    dig tunnel <length> [width=1] [flags]
+    dig quarry <forward distance> <left/right distance> [flags]
     dig help [room/tunnel/quarry/flags]
 
   All distances are excluding the current block, the turtle assumes the current
@@ -346,30 +346,42 @@ local function save()
 end
 
 -- Ensure function to ensure a movement was completed.
-local function _ensure(movement, ...)
+local function _ensure(movement, scan, ...)
   local funcs = table.pack(...)
   while not simulate(skips <= 0, movement) do
     for i = 1, funcs.n do
       funcs[i]()
     end
+    local isBlock, block = scan()
+    if block.name == "minecraft:bedrock" then
+      return false, "oh shit, bedrock"
+    end
     os.sleep()
   end
+
+  return true
 end
 
 -- can turns fail? I don't think they can, but for some reason I recall it happening
 -- eh, if someone reports it I'll add it to this.
 local ensure = {
   forward = function()
-    _ensure(turtleSim.forward, turtle.dig, turtle.attack)
+    local ok = _ensure(turtleSim.forward, turtle.inspect, turtle.dig, turtle.attack)
     save()
+
+    return ok
   end,
   up = function()
-    _ensure(turtleSim.up, turtle.digUp, turtle.attackUp)
+    local ok = _ensure(turtleSim.up, turtle.inspectUp, turtle.digUp, turtle.attackUp)
     save()
+
+    return ok
   end,
   down = function()
-    _ensure(turtleSim.down, turtle.digDown, turtle.attackDown)
+    local ok = _ensure(turtleSim.down, turtle.inspectDown, turtle.digDown, turtle.attackDown)
     save()
+
+    return ok
   end,
   turnLeft = function()
     _ensure(turtleSim.turnLeft, turtle.attackUp, turtle.attack, turtle.attackDown)
@@ -549,13 +561,25 @@ local function face(direction)
 end
 
 -- Move to a location.
-local function moveToTarget(x, y, z)
-  -- Start with y movement as that is the least likely to get in the way of anything.
-  while pos.y > y do
-    ensure.down()
-  end
-  while pos.y < y do
-    ensure.up()
+local function moveToTarget(x, y, z, startZ)
+  if not startZ then
+    -- start with Y movement if we're exiting the shaft
+    while pos.y > y do
+      ensure.down()
+    end
+    while pos.y < y do
+      ensure.up()
+    end
+  else
+    -- otherwise start with z movement.
+    while pos.z > z do
+      face(0)
+      ensure.forward()
+    end
+    while pos.z < z do
+      face(2)
+      ensure.forward()
+    end
   end
 
   -- then move along the x axis as that is left and right.
@@ -568,14 +592,25 @@ local function moveToTarget(x, y, z)
     ensure.forward()
   end
 
-  -- finally slide into those DMs ... er, the z axis.
-  while pos.z > z do
-    face(0)
-    ensure.forward()
-  end
-  while pos.z < z do
-    face(2)
-    ensure.forward()
+  -- finally slide into those DMs ... er, the last axis.
+  if startZ then
+    -- end with Y movement if we're exiting the shaft
+    while pos.y > y do
+      ensure.down()
+    end
+    while pos.y < y do
+      ensure.up()
+    end
+  else
+    -- otherwise end with z movement.
+    while pos.z > z do
+      face(0)
+      ensure.forward()
+    end
+    while pos.z < z do
+      face(2)
+      ensure.forward()
+    end
   end
 end
 
@@ -588,7 +623,7 @@ end
 
 local function returnToWork()
   state = "return_mine"
-  moveToTarget(last.x, last.y, last.z)
+  moveToTarget(last.x, last.y, last.z, "z")
   face(last.facing)
 end
 
@@ -605,6 +640,10 @@ local function room()
   local l, h, w = table.unpack(args.args, 2, 4)
 
   local function doCheck()
+    last.x = pos.x
+    last.y = pos.y
+    last.z = pos.z
+    last.facing = pos.facing
     if checkInv() then
       returnHome()
       dropItems()
@@ -627,21 +666,30 @@ local function room()
       doCheck()
     end,
     forward = function()
-      ensure.forward()
+      if not ensure.forward() then
+        returnHome()
+        error("Found bedrock while trying to move.", 0)
+      end
       doCheck()
     end,
     up = function()
-      ensure.up()
+      if not ensure.up() then
+        returnHome()
+        error("Found bedrock while trying to move.", 0)
+      end
       doCheck()
     end,
     down = function()
-      ensure.down()
+      if not ensure.down() then
+        returnHome()
+        error("Found bedrock while trying to move.", 0)
+      end
       doCheck()
     end,
   }
 
 
-  local turn = wrapper.turnRight
+  local turn = ensure.turnRight
   local vertical = wrapper.up
   local vertDig1, vertDig2 = turtle.digUp, turtle.digDown
   local fuel = not (args.n or args.nofuel)
@@ -746,7 +794,8 @@ local function room()
     digPlane(l, w)
   end
 
-  returnHome(args)
+  returnHome()
+  dropItems()
 end
 
 --- Dig a tunnel.
@@ -759,6 +808,31 @@ end
 -- @tparam {args = {string,...}, flags = {[string] = boolean|string}} The table of arguments.
 local function quarry()
   -- check arguments for correctness
+  for i = 2, 3 do
+    args.args[i] = tonumber(args.args[i])
+    if not args.args[i] then
+      error(string.format("Bad argument #%d: Should be a number.", i), 0)
+    end
+  end
+  args.args[4] = args.args[3]
+  args.args[3] = math.huge
+
+  -- ensure we're quarrying down, not up. lol
+  args.flags.d = true
+  args.flags.down = true
+  args.flags.u = false
+  args.flags.up = false
+
+  local ok, err = pcall(room)
+  -- there should be no case this exits with ok=true.
+  if err:find("bedrock") then
+    if args.flags.i or args.flags.items then
+      dropItems()
+    end
+    return
+  else
+    error(err, 0)
+  end
 end
 
 -- Parse arguments.
@@ -827,6 +901,7 @@ end
 local ok, err = pcall(main)
 if not ok then
   pcall(broadcast, string.format("Errored: %s", err))
+  pcall(printError, err)
   return -- don't delete the resume file, just in case we can resume and error was a one-off.
 end
 
