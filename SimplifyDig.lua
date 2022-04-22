@@ -487,6 +487,20 @@ local function dropNonFuels()
   turtle.select(1)
 end
 
+local function waitBroadcast(thing)
+  -- if we can't drop blocks, just wait.
+  local tmr = os.startTimer(10)
+  repeat
+    local ev, e1 = os.pullEvent()
+    if ev == "timer" and e1 == tmr then
+      tmr = os.startTimer(10)
+      broadcast(thing)
+    end
+  until not checkWholeInv()
+
+  turtle.select(1)
+end
+
 -- Handle logic of dropping items.
 local function dropItems()
   state = "wait"
@@ -494,30 +508,23 @@ local function dropItems()
 
   if (args.flags.i or args.flags.items) and isBlock then
     if block.tags then
-      for i = 1, validStorageTags do
+      for i = 1, validStorageTags.n do
         if block.tags[validStorageTags[i]] then
           return (args.flags.f or args.flags.fuel) and dropNonFuels() or dropAll()
         end
       end
     else
-      for i = 1, validStorageFind do
-        if block.name:find(validStorageFind[i]) do
+      for i = 1, validStorageFind.n do
+        if block.name:find(validStorageFind[i]) then
           return (args.flags.f or args.flags.fuel) and dropNonFuels() or dropAll()
         end
       end
     end
+
+    waitBroadcast("I cannot tell if the inventory in front is valid.")
   else
     -- if we can't drop blocks, just wait.
-    local tmr = os.startTimer(10)
-    repeat
-      local ev, e1 = os.pullEvent()
-      if ev == "timer" and e1 == tmr then
-        tmr = os.startTimer(10)
-        broadcast("Inventory full, dropping disabled.")
-      end
-    until not checkWholeInv()
-
-    turtle.select(1)
+    waitBroadcast("Inventory full, dropping disabled.")
   end
 end
 
