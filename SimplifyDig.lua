@@ -383,7 +383,10 @@ local ensure = {
 
 -- Broadcast an issue across rednet whenever one arises.
 local function broadcast(issue)
-  local message = string.format("Cannot continue mining: %s", issue)
+  local message = {
+    issue = issue,
+    pos = pos
+  }
   if type(args.flags.broadcast) == "boolean" then
     rednet.broadcast(message)
   elseif type(args.flags.broadcast) == "string" then
@@ -524,7 +527,11 @@ local function dropItems()
     waitBroadcast("I cannot tell if the inventory in front is valid.")
   else
     -- if we can't drop blocks, just wait.
-    waitBroadcast("Inventory full, dropping disabled.")
+    if not (args.flags.i or args.flags.items) then
+      waitBroadcast("Inventory full, dropping disabled.")
+    else
+      waitBroadcast("Inventory full, could not find chest.")
+    end
   end
 end
 
@@ -806,13 +813,23 @@ if args.flags.broadcast then
   pcall(rednet.open, "left")
   pcall(rednet.open, "right")
 end
-if args.args[1] == "room" then
-  room()
-elseif args.args[1] == "tunnel" then
-  tunnel()
-elseif args.args[1] == "quarry" then
-  quarry()
+
+local function main()
+  if args.args[1] == "room" then
+    room()
+  elseif args.args[1] == "tunnel" then
+    tunnel()
+  elseif args.args[1] == "quarry" then
+    quarry()
+  end
 end
+
+local ok, err = pcall(main)
+if not ok then
+  pcall(broadcast, string.format("Errored: %s", err))
+  return -- don't delete the resume file, just in case we can resume and error was a one-off.
+end
+
 
 -- clean up the temporary resume file.
 fs.delete("startup/!_resume_dig.lua")
