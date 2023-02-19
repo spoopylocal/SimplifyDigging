@@ -528,11 +528,10 @@ local function dropItems()
           return (args.flags.f or args.flags.fuel) and dropNonFuels() or dropAll()
         end
       end
-    else
-      for i = 1, validStorageFind.n do
-        if block.name:find(validStorageFind[i]) then
-          return (args.flags.f or args.flags.fuel) and dropNonFuels() or dropAll()
-        end
+    end
+    for i = 1, validStorageFind.n do
+      if block.name:find(validStorageFind[i]) then
+        return (args.flags.f or args.flags.fuel) and dropNonFuels() or dropAll()
       end
     end
 
