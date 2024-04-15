@@ -425,12 +425,15 @@ end
 
 local validStorageTags = {
   "minecraft:shulker_boxes",
-  "forge:chests"
+  "forge:chests",
+  "forge:barrels",
+  "minecraft:chest
 }
 validStorageTags.n = #validStorageTags
 local validStorageFind = {
   "chest",
-  "shulker_box"
+  "shulker_box",
+  "barrel"
 }
 validStorageFind.n = #validStorageFind
 local coal = "minecraft:coal"
